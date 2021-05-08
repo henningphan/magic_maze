@@ -62,8 +62,8 @@ do both
          vortexes = [self.position(v) for v in vortexes]
          my_pos = self.position(players[self.avatar])
 
-         distance = self.calculate_distance(my_pos, crates)
-         self.move_to(distance,(0,4))
+         distance = Solution.calculate_distance(self.maze, my_pos, crates)
+         Solution.move_to(distance,(0,4))
 
 
 
@@ -81,7 +81,7 @@ do both
                  distance[pos] = [pos] + way
                  new_way = [pos] + way
                  neighbours = ((pos, new_way.copy()) for pos in
-                         Solution.neighbours(pos, maze) if distance[pos] is None or pos in blocked_pos)
+                         Solution.neighbours(pos, maze) if distance[pos] is None and pos not in blocked_pos)
                  queue.extend(neighbours)
          return distance
 
@@ -111,6 +111,5 @@ do both
          x2, y2 = distance[pos][-2]
          x_change = x2-x1
          y_change = y2-y1
-#         self.api.move(x_change, y_change)
          return (x_change, y_change)
 
