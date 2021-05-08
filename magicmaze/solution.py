@@ -24,7 +24,7 @@ static maze
         :type walls: List[string]
         :type your_avatar: string
         """
-        pprint(walls)
+        print("whoami: ", your_avatar)
         self.avatar = your_avatar
         self.maze = {xy: None for xy in product(range(maze_width),
 range(maze_height))}
@@ -56,13 +56,19 @@ do both
         my_pos = self.position(players[self.avatar])
         pprint(my_pos)
         crates = [self.position(c) for c in crates]
+        powerups = [self.position(p) for p in powerups if self.position(p) != my_pos]
 
-        powerups = [self.position(p) for p in powerups]
         vortexes = [self.position(v) for v in vortexes]
         my_pos = self.position(players[self.avatar])
 
         distance = Solution.calculate_distance(self.maze, my_pos, crates)
-        self.api.move(*Solution.move_to(distance,(0,4)))
+        action, score = Solution.next_action(my_pos, distance, crates, powerups, vortexes, players, self.maze)
+        print("best action: ", action)
+        if action == "bomb":
+            self.api.magical_explosion()
+        else:
+            pos = action
+            self.api.move(*Solution.move_to(distance, pos))
 
 
     @staticmethod
@@ -95,12 +101,6 @@ do both
         return valid_neighbours
 
     @staticmethod
-    def calculate_value(my_pos, distance, crates, powerups, players):
-        pass
-            
-    
-
-    @staticmethod
     def move_to(distance, pos):
         """
         :type distance: maze with walking distance
@@ -114,3 +114,34 @@ do both
         y_change = y2-y1
         return (x_change, y_change)
 
+    @staticmethod
+    def next_action(my_pos, distance, crates, powerups, vortexes, players, maze):
+        bomb_score = Solution.eval_bomb(my_pos, crates, vortexes)
+        pos_score = [(pos, Solution.position_score(pos, distance, crates, powerups, vortexes, maze)) for pos in maze.copy().keys()]
+        scores = pos_score + [bomb_score]
+        scores.sort(key=lambda tup: tup[1], reverse=True)
+        return scores[0]
+
+        
+
+    @staticmethod
+    def eval_bomb(my_pos, crates, vortexes):
+        if my_pos in vortexes:
+            return ("bomb", 0)
+        else:
+            return ("bomb", Solution.crates_around_pos(my_pos, crates))
+    @staticmethod
+    def crates_around_pos(pos, crates):
+        next_to_me = [(pos[0]-1, pos[1]), (pos[0]+1, pos[1]),
+                (pos[0], pos[1]-1), (pos[0], pos[1]+1)]
+        return len([c for c in crates if c in next_to_me])
+
+    @staticmethod
+    def position_score(pos, distance, crates, powerups, vortexes, maze):
+        try:
+            scores = (Solution.crates_around_pos(pos, crates)*10 +
+                    1 if pos in powerups else 0)/len(distance[pos])
+            return scores
+        except Exception as e:
+            #print("exception", distance[pos])
+            return 0
