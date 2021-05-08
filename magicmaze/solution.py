@@ -64,7 +64,9 @@ do both
 
         distance = Solution.calculate_distance(self.maze, my_pos, crates)
         action, score = Solution.next_action(my_pos, distance, crates, powerups, vortexes, players, self.maze)
-        print("best action: ", action)
+        if action == (0,0):
+            copypaste(my_pos, distance, crates, powerups, vortexes, players, self.maze)
+        print("best action: ", action, score)
         if action == "bomb":
             self.api.magical_explosion()
         else:
@@ -140,11 +142,11 @@ do both
     @staticmethod
     def position_score(pos, distance, crates, powerups, vortexes, maze):
         try:
-            scores = (Solution.crates_around_pos(pos, crates)*10 +
-                    1 if pos in powerups else 0)/len(distance[pos])
+            scores = (Solution.eval_bomb(pos, crates, vortexes)[1]*0.8 +
+                    (1 if pos in powerups else 0))/len(distance[pos])
             return scores
         except Exception as e:
-            #print("exception", distance[pos])
+            print(e)
             return 0
 
 
