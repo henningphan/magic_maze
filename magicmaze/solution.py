@@ -54,6 +54,7 @@ do both
         """
         self.tick += 1
         my_pos = self.position(players[self.avatar])
+        print("whoami: ", self.avatar)
         pprint(my_pos)
         crates = [self.position(c) for c in crates]
         powerups = [self.position(p) for p in powerups if self.position(p) != my_pos]
@@ -145,3 +146,13 @@ do both
         except Exception as e:
             #print("exception", distance[pos])
             return 0
+
+
+def copypaste(my_pos, distance, crates, powerups, vortexes, players, maze):
+    print("my_pos=", my_pos)
+    print("distance=", distance)
+    print("crates=", crates)
+    print("powerups=", powerups)
+    print("vortexes=", vortexes)
+    print("players=", players)
+    print("maze=", maze)
