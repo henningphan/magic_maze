@@ -2,7 +2,6 @@ from itertools import product
 from collections import namedtuple
 from pprint import pprint
 
-
 class Solution:
      def __init__(self, api):
          self.api = api
@@ -28,11 +27,11 @@ static maze
          """
          pprint(walls)
          self.avatar = your_avatar
-         self.map = {xy: None for xy in product(range(maze_width),
+         self.maze = {xy: None for xy in product(range(maze_width),
 range(maze_height))}
 
          for xy in (self.position(xy) for xy in walls):
-             del self.map[xy]
+             del self.maze[xy]
 
          assert maze_width == maze_height
 
@@ -68,37 +67,50 @@ do both
 
 
 
-     def calculate_distance(self, my_pos, blocked_pos=None):
+     @staticmethod
+     def calculate_distance(maze, my_pos, blocked_pos=None):
          """
          :type blocked_pos: Tuple(int, int), positions one cannot move to
          """
          blocked_pos = blocked_pos if blocked_pos else []
-         distance = self.map.copy()
+         distance = maze.copy()
          queue = [(my_pos, [])]
          while queue:
              pos, way = queue.pop(0)
              if distance[pos] is None:
-                 distance[pos] = way
+                 distance[pos] = [pos] + way
                  new_way = [pos] + way
                  neighbours = ((pos, new_way.copy()) for pos in
-self.neighbours(pos) if distance[pos] is None or pos in blocked_pos)
+                         Solution.neighbours(pos, maze) if distance[pos] is None or pos in blocked_pos)
                  queue.extend(neighbours)
          return distance
 
-
-     def neighbours(self, pos):
+     @staticmethod
+     def neighbours(pos, maze):
+         """
+         :type pos: tuple(int, int)
+         :type maze: dict[tuple(int int)] = None
+         """
          all_neighbours = [(pos[0]-1, pos[1]), (pos[0]+1, pos[1]),
-(pos[0], pos[1]-1), (pos[0], pos[1]+1)]
-         valid_neighbours = [n for n in all_neighbours if n in self.map]
+                 (pos[0], pos[1]-1), (pos[0], pos[1]+1)]
+         valid_neighbours = [n for n in all_neighbours if n in maze]
          return valid_neighbours
 
      def calculate_value(self, distance, crates, powerups, players):
          pass
-     def move_to(self, distance, pos):
-         print(distance[pos])
+
+     @staticmethod
+     def move_to(distance, pos):
+         """
+         :type distance: maze with walking distance
+         :type pos): tuple(int, int)
+         """
+         if len(distance[pos]) == 1:
+             return (0,0)
          x1, y1 = distance[pos][-1]
          x2, y2 = distance[pos][-2]
-         pprint(distance[pos][-1])
-         pprint(distance[pos][-2])
-         self.api.move(x2-x1, y2-y1)
+         x_change = x2-x1
+         y_change = y2-y1
+#         self.api.move(x_change, y_change)
+         return (x_change, y_change)
 

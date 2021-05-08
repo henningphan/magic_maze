@@ -7,4 +7,3 @@ def solution():
     mock_api = MagicMock()
     sol = Solution(mock_api)
     return sol
-
