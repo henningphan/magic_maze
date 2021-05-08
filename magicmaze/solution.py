@@ -129,7 +129,7 @@ do both
         if my_pos in vortexes:
             return ("bomb", 0)
         else:
-            return ("bomb", Solution.crates_around_pos(my_pos, crates))
+            return ("bomb", Solution.crates_around_pos(my_pos, crates)*10)
     @staticmethod
     def crates_around_pos(pos, crates):
         next_to_me = [(pos[0]-1, pos[1]), (pos[0]+1, pos[1]),
