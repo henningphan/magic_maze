@@ -145,8 +145,7 @@ do both
             scores = (Solution.eval_bomb(pos, crates, vortexes)[1]*0.8 +
                     (1 if pos in powerups else 0))/len(distance[pos])
             return scores
-        except Exception as e:
-            print(e)
+        except TypeError as e:
             return 0
 
 
