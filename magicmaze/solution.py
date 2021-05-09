@@ -14,7 +14,7 @@ class State:
         self.powerups = []
         self.vortexes = []
         self.crates = []
-        self.player_power = {}
+        self.power = {}
 
     def init_map(self, maze_width, maze_height, walls):
         """
@@ -23,24 +23,42 @@ class State:
         maze = {xy: None for xy in product(
                      range(maze_width), range(maze_height))}
 
-        for xy in (self.position(xy) for xy in walls):
+        for xy in (self.to_pos(xy) for xy in walls):
             del self.maze[xy]
         self.maze = maze
         return maze
 
-    def position(str_pos):
+    def update_players(self, str_players):
+        player_to_xy = {player: to_pos(str_xy)
+                for player, str_xy in str_players.items()}
+        self.players.append(player_to_xy)
+
+    def update_vortexes(self, vortexes):
+        self.vortexes.append([self.to_pos(v) for v in vortexes])
+
+    def update_powerups(self, str_powerups):
+        powerups = [self.to_pos(p) for p in str_powerups]
+        for p, xy in self.players[-1].items():
+            if xy in powerups:
+                self.power[-1][p] += 1
+
+    def to_pos(self, str_pos):
         x, y = str_pos.replace("(","").replace(")","").split(",")
         return int(x), int(y)
 
     def init_players(self, your_avatar, players):
         self.avatar = your_avatar
         self.players = [players]
-        self.player_power = [{p: 1 for p in players.keys()}]
-        self.player_power[-1][self.avatar] = 1
+        self.power = [{p: 1 for p in players.keys()}]
+        self.power[-1][self.avatar] = 1
 
     @property
     def my_pos(self):
         return self.players[-1][self.avatar]
+
+    @property
+    def my_power(self):
+        return self.power[-1][self.avatar]
 
     @property
     def enemies(self):
@@ -50,6 +68,7 @@ class State:
 
 def calculate_distance(state, pos):
     """
+    :type state: class state
     :type blocked_pos: Tuple(int, int), positions one cannot move to
     """
     try:

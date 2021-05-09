@@ -39,14 +39,21 @@ def test_move_to():
     x, y = Solution.move_to(distance, (0,0))
     assert y == 0
 
-def test_state_constructor():
+def test_state_calculate_distance():
     state = State()
     state.init_map(6,6,[])
     state.init_players("elf", {"elf": (0,0)})
     distance = mm.calculate_distance(state, (0,0))
     assert len(distance) == 36
     
-
+def test_update_powerups():
+    state = State()
+    state.init_players("elf", {"elf": (0,0)})
+    assert state.my_power == 1
+    state.update_powerups(["(0,0)"])
+    assert state.my_power == 2
+    state.update_powerups(["(0,0)"])
+    assert state.my_power == 3
 
 
 
