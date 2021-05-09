@@ -1,6 +1,7 @@
 import pytest
 from fixtures import solution
-from magicmaze import Solution
+from magicmaze import Solution, State
+import magicmaze as mm
 from itertools import product
 
 def test_neighbours():
@@ -37,3 +38,15 @@ def test_move_to():
     distance = Solution.calculate_distance(maze, (0, 0), [])
     x, y = Solution.move_to(distance, (0,0))
     assert y == 0
+
+def test_state_constructor():
+    state = State()
+    state.init_map(6,6,[])
+    state.init_players("elf", {"elf": (0,0)})
+    distance = mm.calculate_distance(state, (0,0))
+    assert len(distance) == 36
+    
+
+
+
+

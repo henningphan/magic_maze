@@ -2,10 +2,86 @@ from itertools import product
 from collections import namedtuple
 from pprint import pprint
 
+class State:
+    def __init__(self):
+        self.avatar = None
+        self.powerup = 1
+        self.crate = 5
+        self.player = 20
+        self.immolation = -10
+        self.tick = 0
+        self.maze = {}
+        self.powerups = []
+        self.vortexes = []
+        self.crates = []
+        self.player_power = {}
+
+    def init_map(self, maze_width, maze_height, walls):
+        """
+        :return type: dict[tuple(int, int)] = None
+        """
+        maze = {xy: None for xy in product(
+                     range(maze_width), range(maze_height))}
+
+        for xy in (self.position(xy) for xy in walls):
+            del self.maze[xy]
+        self.maze = maze
+        return maze
+
+    def position(str_pos):
+        x, y = str_pos.replace("(","").replace(")","").split(",")
+        return int(x), int(y)
+
+    def init_players(self, your_avatar, players):
+        self.avatar = your_avatar
+        self.players = [players]
+        self.player_power = [{p: 1 for p in players.keys()}]
+        self.player_power[-1][self.avatar] = 1
+
+    @property
+    def my_pos(self):
+        return self.players[-1][self.avatar]
+
+    @property
+    def enemies(self):
+        return [pos for player, pos in self.players[-1].items()
+                if player != self.avatar]
+
+
+def calculate_distance(state, pos):
+    """
+    :type blocked_pos: Tuple(int, int), positions one cannot move to
+    """
+    try:
+        blocked_pos = state.crates[-1] + state.enemies
+    except IndexError:
+        blocked_pos = state.enemies
+    distance = state.maze.copy()
+    queue = [(state.my_pos, [])]
+    while queue:
+        pos, way = queue.pop(0)
+        if distance[pos] is None:
+            distance[pos] = [pos] + way
+            new_way = [pos] + way
+            neig = ((pos, new_way.copy()) for pos in
+                    neighbours(state,pos) if distance[pos] is None and pos not in blocked_pos)
+            queue.extend(neig)
+    return distance
+
+def neighbours(state, pos):
+    """
+    :type pos: tuple(int, int)
+    :type state: class State
+    """
+    all_neighbours = [(pos[0]-1, pos[1]), (pos[0]+1, pos[1]),
+            (pos[0], pos[1]-1), (pos[0], pos[1]+1)]
+    valid_neighbours = [n for n in all_neighbours if n in state.maze]
+    return valid_neighbours
+
 class Solution:
     def __init__(self, api):
         self.api = api
-        self.powerup = -1
+        self.powerup = 1
         self.crate = 5
         self.player = 20
         self.immolation = -10
@@ -125,7 +201,6 @@ do both
         scores.sort(key=lambda tup: tup[1], reverse=True)
         return scores[0]
 
-        
 
     @staticmethod
     def eval_bomb(my_pos, crates, vortexes):
