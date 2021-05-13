@@ -41,6 +41,7 @@ class State:
         for p, xy in self.players[-1].items():
             if xy in powerups:
                 self.power[-1][p] += 1
+        self.powerups.append(powerups)
 
     def update_crates(self, str_crates):
         self.crates.append([self.to_pos(c) for c in str_crates])
@@ -101,6 +102,34 @@ def neighbours(state, pos):
     valid_neighbours = [n for n in all_neighbours if n in state.maze]
     return valid_neighbours
 
+def next_action(state):
+    bomb_score = eval_bomb(state, state.my_pos)
+    distance = calculate_distance(state, state.my_pos)
+    pos_score = [(pos, position_score(state, distance, pos)) for pos, dis in distance.items() if dis is not None]
+    scores = pos_score + [bomb_score]
+    scores.sort(key=lambda tup: tup[1], reverse=True)
+    if scores[0][0] == "bomb":
+        return scores[0]
+    else:
+        return (Solution.move_to(distance, scores[0][0]), scores[0][1])
+
+def eval_bomb(state, pos):
+    if pos in state.vortexes[-1]:
+        return ("bomb", 0)
+    else:
+        return ("bomb", crates_around_pos(pos, state.crates[-1])*state.crate)
+
+def crates_around_pos(pos, crates):
+    next_to_me = [(pos[0]-1, pos[1]), (pos[0]+1, pos[1]),
+            (pos[0], pos[1]-1), (pos[0], pos[1]+1)]
+    return len([c for c in crates if c in next_to_me])
+
+def position_score(state, distance, pos):
+    scores = (eval_bomb(state, pos)[1]*0.8 +
+            (1 if pos in state.powerups[-1] else 0))/len(distance[pos])
+    return scores
+
+
 class Solution:
     def __init__(self, api):
         self.api = api
@@ -152,6 +181,7 @@ do both
         self.state.update_powerups(powerups)
         self.state.update_crates(crates)
         self.state.update_vortexes(vortexes)
+        self.state.dump()
 
 
         action, score = next_action(self.state)
@@ -175,33 +205,3 @@ do both
         x_change = x2-x1
         y_change = y2-y1
         return (x_change, y_change)
-
-def next_action(state):
-    bomb_score = eval_bomb(state)
-    distance = calculate_distance(state, state.my_pos)
-    pos_score = [(pos, position_score(state, pos, distance)) for pos, dis in distance.items() if dis is not None]
-    scores = pos_score + [bomb_score]
-    scores.sort(key=lambda tup: tup[1], reverse=True)
-    if scores[0][0] == "bomb":
-        return scores[0]
-    else:
-        return (Solution.move_to(distance, scores[0][0]), scores[0][1])
-
-def eval_bomb(state):
-    if state.my_pos in state.vortexes[-1]:
-        return ("bomb", 0)
-    else:
-        return ("bomb", crates_around_pos(state.my_pos, state.crates[-1])*state.crate)
-
-def crates_around_pos(pos, crates):
-    next_to_me = [(pos[0]-1, pos[1]), (pos[0]+1, pos[1]),
-            (pos[0], pos[1]-1), (pos[0], pos[1]+1)]
-    return len([c for c in crates if c in next_to_me])
-
-def position_score(state, distance, pos):
-    try:
-        scores = (eval_bomb(pos, state.crates[-1], state.vortexes[-1])[1]*0.8 +
-                (1 if pos in powerups else 0))/len(distance[pos])
-        return scores
-    except TypeError as e:
-        return 0
