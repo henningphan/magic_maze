@@ -55,5 +55,9 @@ def test_update_powerups():
     state.update_powerups(["(0,0)"])
     assert state.my_power == 3
 
-
-
+def test_update_vortexes():
+    state = State()
+    state.update_vortexes(["0,0", "0,1"])
+    assert len(state.vortexes) == 1
+    state.update_vortexes(["0,0"])
+    assert len(state.vortexes) == 2
