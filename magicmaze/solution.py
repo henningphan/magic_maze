@@ -66,6 +66,9 @@ class State:
         return [pos for player, pos in self.players[-1].items()
                 if player != self.avatar]
 
+    def dump(self):
+        print(self.__dict__)
+
 
 def calculate_distance(state, pos):
     """
@@ -140,9 +143,10 @@ do both
         :type vortexes: List[string]
         :type players: Dict[string, string]
         """
-        print("avatar:", self.state.avatar)
         if self.tick == 0:
             self.state.init_players(players)
+        print("avatar:", self.state.avatar)
+        print("my_pos:", self.state.my_pos)
         self.tick += 1
         self.state.update_players(players)
         self.state.update_powerups(powerups)
@@ -175,13 +179,13 @@ do both
 def next_action(state):
     bomb_score = eval_bomb(state)
     distance = calculate_distance(state, state.my_pos)
-    pos_score = [(pos, position_score(state, pos, distance)) for pos in state.maze.copy().keys()]
+    pos_score = [(pos, position_score(state, pos, distance)) for pos, dis in distance.items() if dis is not None]
     scores = pos_score + [bomb_score]
     scores.sort(key=lambda tup: tup[1], reverse=True)
     if scores[0][0] == "bomb":
         return scores[0]
     else:
-        return (scores[0][0], Solution.move_to(distance, scores[0][0]))
+        return (Solution.move_to(distance, scores[0][0]), scores[0][1])
 
 def eval_bomb(state):
     if state.my_pos in state.vortexes[-1]:
