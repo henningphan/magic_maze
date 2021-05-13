@@ -140,25 +140,23 @@ do both
         :type vortexes: List[string]
         :type players: Dict[string, string]
         """
-        print("avatar:", self.state.avatar())
+        print("avatar:", self.state.avatar)
         if self.tick == 0:
             self.state.init_players(players)
         self.tick += 1
         self.state.update_players(players)
         self.state.update_powerups(powerups)
+        self.state.update_crates(crates)
         self.state.update_vortexes(vortexes)
 
 
-        distance = calculate_distance(self.state, self.my_pos)
-        action, score = next_action(my_pos, distance, crates, powerups, vortexes, players, self.maze)
-        if action == (0,0):
-            copypaste(my_pos, distance, crates, powerups, vortexes, players, self.maze)
+        action, score = next_action(self.state)
         print("best action: ", action, score)
         if action == "bomb":
             self.api.magical_explosion()
         else:
             pos = action
-            self.api.move(*Solution.move_to(distance, pos))
+            self.api.move(*pos)
 
     @staticmethod
     def move_to(distance, pos):
@@ -177,10 +175,13 @@ do both
 def next_action(state):
     bomb_score = eval_bomb(state)
     distance = calculate_distance(state, state.my_pos)
-    pos_score = [(pos, position_score(pos, distance, state.crates, state.powerups, state.vortexes, state.maze)) for pos in state.maze.copy().keys()]
+    pos_score = [(pos, position_score(state, pos, distance)) for pos in state.maze.copy().keys()]
     scores = pos_score + [bomb_score]
     scores.sort(key=lambda tup: tup[1], reverse=True)
-    return scores[0]
+    if scores[0][0] == "bomb":
+        return scores[0]
+    else:
+        return (scores[0][0], Solution.move_to(distance, scores[0][0]))
 
 def eval_bomb(state):
     if state.my_pos in state.vortexes[-1]:
@@ -193,9 +194,9 @@ def crates_around_pos(pos, crates):
             (pos[0], pos[1]-1), (pos[0], pos[1]+1)]
     return len([c for c in crates if c in next_to_me])
 
-def position_score(pos, distance, crates, powerups, vortexes, maze):
+def position_score(state, distance, pos):
     try:
-        scores = (eval_bomb(pos, crates, vortexes)[1]*0.8 +
+        scores = (eval_bomb(pos, state.crates[-1], state.vortexes[-1])[1]*0.8 +
                 (1 if pos in powerups else 0))/len(distance[pos])
         return scores
     except TypeError as e:
