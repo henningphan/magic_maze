@@ -1,8 +1,9 @@
-from itertools import product
-from collections import namedtuple
+from itertools import product, groupby
+from collections import namedtuple, defaultdict
 from pprint import pprint
 
 class State:
+    Vort = namedtuple("Vort", ["pos", "power", "time"])
     def __init__(self):
         self.avatar = None
         self.tick = 0
@@ -12,7 +13,9 @@ class State:
         self.immolation = -10
         self.maze = {}
         self.powerups = []
+        self.players = []
         self.vortexes = []
+        self.heatmap = {}
         self.crates = []
         self.power = {}
 
@@ -26,6 +29,7 @@ class State:
         for xy in (self.to_pos(xy) for xy in walls):
             del maze[xy]
         self.maze = maze
+        self.heatmap = maze.copy()
         return maze
 
     def update_players(self, str_players):
@@ -34,7 +38,21 @@ class State:
         self.players.append(player_to_xy)
 
     def update_vortexes(self, str_vortexes):
-        self.vortexes.append([self.to_pos(v) for v in str_vortexes])
+        def get_power(xy):
+            player = [player for player, pos in self.players[-1].items() if xy == pos][0]
+            power = self.power[-1][player]
+            return power
+        def get_previous():
+            try:
+                return self.vortexes[-1]
+            except Exception:
+                return []
+        incoming_vort = [self.to_pos(str_pos) for str_pos in str_vortexes]
+        previous = [v._replace(time=v.time-1) for v in get_previous()
+                        if v.time >= 0 and v.pos in incoming_vort]
+        new = [State.Vort(pos, get_power(pos), 5) for pos in incoming_vort
+                if pos not in set(v.pos for v in previous)]
+        self.vortexes.append(previous+new)
 
     def update_powerups(self, str_powerups):
         powerups = [self.to_pos(p) for p in str_powerups]
@@ -129,6 +147,53 @@ def position_score(state, distance, pos):
             (1 if pos in state.powerups[-1] else 0))/len(distance[pos])
     return scores
 
+def survive(state):
+    pass
+
+def create_heatmap(state):
+    """
+    returns a map of positions which are deadly
+    and a list of vortexes which hasnt detonated yet
+    """
+    vortexes = state.vortexes[-1]
+    vortexes.sort(key=lambda x: x.time)
+    heatmap = set()
+    untouched = {v.pos: v for v in vortexes}
+    queue = [v for v in vortexes if v.time == 0]
+    while queue:
+        vortex = queue.pop(0)
+        del untouched[vortex.pos]
+
+        for pos in bomb_map(state, vortex):
+            heatmap.add(pos)
+            if pos in untouched:
+                queue.append(untouched[pos])
+    return heatmap, untouched.values()
+
+def bomb_map(state, vort):
+    pos = vort.pos
+    bombed_pos = [pos]
+    for xy in ((x, pos[1]) for x in range(pos[0]+1, pos[0]+vort.power+1)):
+        if xy not in state.maze:
+            break
+        bombed_pos.append(xy)
+    for xy in ((x, pos[1]) for x in range(pos[0]-1, pos[0]-vort.power-1, -1)):
+        if xy not in state.maze:
+            break
+        bombed_pos.append(xy)
+    for xy in ((pos[0], y) for y in range(pos[1]+1, pos[1]+vort.power+1)):
+        if xy not in state.maze:
+            break
+        bombed_pos.append(xy)
+    for xy in ((pos[0], y) for y in range(pos[1]-1, pos[1]-vort.power-1, -1)):
+        if xy not in state.maze:
+            break
+        bombed_pos.append(xy)
+    return bombed_pos
+
+
+
+        
 
 class Solution:
     def __init__(self, api):

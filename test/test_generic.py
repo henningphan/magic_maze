@@ -1,4 +1,5 @@
 import pytest
+from pprint import pprint
 from fixtures import solution
 from magicmaze import Solution, State
 import magicmaze as mm
@@ -78,9 +79,54 @@ def test_update_powerups():
     state.update_powerups(["(0,0)"])
     assert state.my_power == 3
 
-def test_update_vortexes():
+def test_update_vortexes_basic():
+    """One player puts down one vortex"""
     state = State()
-    state.update_vortexes(["0,0", "0,1"])
+    state.avatar = "elf"
+    state.init_players({"elf": "0,0"})
+    state.update_vortexes(["0,0"])
     assert len(state.vortexes) == 1
     state.update_vortexes(["0,0"])
     assert len(state.vortexes) == 2
+
+def test_update_vortexes_advanced():
+    """
+    One player puts down one vortex
+    and there is a preexisting vortex
+    """
+    state = State()
+    state.avatar = "elf"
+    state.init_players({"elf": "0,0"})
+    state.vortexes.append([State.Vort((0,1), 1, 1)])
+    state.update_vortexes(["0,0", "0,1"])
+    assert len(state.vortexes[-1]) == 2
+    state.update_vortexes(["0,0", "0,1"])
+    assert len(state.vortexes[-1]) == 2
+    state.update_vortexes(["0,0"])
+    assert len(state.vortexes[-1]) == 1
+
+def test_heatmap():
+    state = State()
+    state.avatar = "elf"
+    state.init_players({"elf": "0,0"})
+    state.init_map(6,6, [])
+    state.vortexes.append([State.Vort((0,1), 1, 1), State.Vort((0,0), 5, 5)])
+    heatmap = create_heatmap(state)
+
+
+def test_bomb_map():
+    state = State()
+    state.init_map(6,6, [])
+    abc = mm.bomb_map(state, State.Vort((1,1),4,1))
+    assert len(abc) == 11
+    abc = mm.bomb_map(state, State.Vort((0,0),4,1))
+    assert len(abc) == 9
+
+
+def test_heatmap():
+    state = State()
+    state.init_map(6,6, [])
+    state.vortexes.append([State.Vort((0,0),1,0), State.Vort((0,1),1, 2)])
+    heatmap, future_vortexes = mm.create_heatmap(state)
+    assert len(abc) == 11
+
