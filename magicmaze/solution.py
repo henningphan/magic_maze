@@ -134,6 +134,13 @@ def next_action(state):
     """
     returns tuple(action, score)
     """
+    def get_penalty(penalty_table, distance, pos):
+        try:
+            return penalty_table[distance[pos][-2]]
+        except:
+            return penalty_table[distance[pos][-1]]
+
+
     penalty_table = create_action_penalty_lookup(state)
     bomb_score = Action("bomb",
             state.my_pos,
@@ -143,7 +150,7 @@ def next_action(state):
     pos_score = [Action(move_to(distance, pos),
         state.my_pos,
         pos,
-        position_score(state, distance, pos)- penalty_table[distance[pos][-1]]*20)
+        position_score(state, distance, pos)- get_penalty(penalty_table, distance,pos)*20)
                     for pos, dis in distance.items()
                         if dis is not None]
     actions = pos_score + [bomb_score]
@@ -164,6 +171,7 @@ def create_action_penalty_lookup(state):
     state2.update_all(crates, [], vortexes, players)
     action_death["bomb"] = is_dying(state2, depth=3)
     for pos in get_valid_ways(state, state.my_pos):
+        if pos == (1,0):
         state2 = deepcopy(state)
         players = state2.players[-1].copy()
         players[state2.avatar] = pos
