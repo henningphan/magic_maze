@@ -136,12 +136,13 @@ def test_action_penalty_die():
     state.init_players({"elf": "0,0"})
     state.init_map(6,1, [])
     state.vortexes.append([State.Vort((0,0),6,0)])
-    assert mm.calculate_action_penalty(state,depth=5) == 1
+    assert mm.is_dying(state,depth=5) == 1
 
 def test_action_penalty_survive():
     state = State()
     state.avatar = "elf"
     state.init_players({"elf": "0,0"})
     state.init_map(6,1, [])
+    state.update_all([],[],[],{"elf": "0,0"})
     state.vortexes.append([])
-    assert mm.calculate_action_penalty(state,depth=5) == 0
+    assert mm.is_dying(state,depth=5) == 0

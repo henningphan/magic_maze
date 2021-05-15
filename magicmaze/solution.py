@@ -5,6 +5,7 @@ from copy import deepcopy
 
 class State:
     Vort = namedtuple("Vort", ["pos", "power", "time"])
+    Action = namedtuple("Action", ["name", "my_pos", "dst", "score"])
     def __init__(self):
         self.avatar = None
         self.tick = 0
@@ -72,6 +73,8 @@ class State:
         self.crates.append([self.to_pos(c) for c in str_crates])
 
     def to_pos(self, str_pos):
+        if isinstance(str_pos, tuple):
+            return str_pos
         x, y = str_pos.replace("(","").replace(")","").split(",")
         return int(x), int(y)
 
@@ -131,40 +134,76 @@ def next_action(state):
     """
     returns tuple(action, score)
     """
-    bomb_score = eval_bomb(state, state.my_pos)
+    penalty_table = create_action_penalty_lookup(state)
+    bomb_score = State.Action("bomb",
+            state.my_pos,
+            state.my_pos,
+            eval_bomb(state, state.my_pos)-penalty_table["bomb"]*20)
     distance = calculate_distance(state, state.my_pos)
-    pos_score = [(pos, position_score(state, distance, pos))
+    pos_score = [State.Action(move_to(distance, pos),
+        state.my_pos,
+        pos,
+        position_score(state, distance, pos)- penalty_table[distance[pos][-1]]*20)
                     for pos, dis in distance.items()
                         if dis is not None]
-    scores = pos_score + [bomb_score]
-    scores.sort(key=lambda tup: tup[1], reverse=True)
-    calculate_action_penalty(state)
-    if scores[0][0] == "bomb":
-        return scores[0]
-    else:
-        return (move_to(distance, scores[0][0]), scores[0][1])
+    actions = pos_score + [bomb_score]
+    actions.sort(key=lambda tup: tup[1], reverse=True)
+    return actions[-1]
 
+def create_action_penalty_lookup(state):
+    """
+    Returns dict with action mapped to penalty
+    """
+    action_death = {}
+    state2 = deepcopy(state)
+    players = state2.players[-1].copy()
+    heatmap, vortexes = create_heatmap(state2)
+    vortexes = [str(v.pos) for v in vortexes]
+    vortexes.append(str(state2.my_pos)) # add my own bomb
+    crates = [str(c) for c in state2.crates[-1] if c not in heatmap]
+    state2.update_all(crates, [], vortexes, players)
+    action_death["bomb"] = is_dying(state2, depth=5)
+    for pos in get_valid_ways(state, state.my_pos):
+        if pos in state.crates[-1]:
+            continue
+        state2 = deepcopy(state)
+        players = state2.players[-1].copy()
+        heatmap, vortexes = create_heatmap(state2)
+        vortexes = [str(v.pos) for v in vortexes]
+        vortexes.append(str(state2.my_pos)) # add my own bomb
+        crates = [str(c) for c in state2.crates[-1] if c not in heatmap]
+        state2.update_all(crates, [], vortexes, players)
+        action_death[pos] = is_dying(state2, depth=5)
+    return action_death
 
-def calculate_action_penalty(state, depth=5):
+def get_valid_ways(state, pos):
+    """
+    Returns list of positions an avatar can move to
+    """
+    all_moves = [pos, (pos[0]-1, pos[1]), (pos[0]+1, pos[1]),
+            (pos[0], pos[1]-1), (pos[0], pos[1]+1)]
+    heatmap, _ = create_heatmap(state)
+    blocked = [c for c in state.crates[-1] if c not in heatmap]
+    return [m for m in all_moves if m in state.maze and m not in blocked]
+
+def is_dying(state, depth=5):
     """
     Returns 1 if I die by my actions else returns 0
     """
-    def get_valid_ways():
-        potential_ways = [pos for pos, path in distance.items()
-                          if path is not None and len(path) <=2]
-        valid_ways = [w for w in potential_ways
-                      if w in state.maze and w not in state.vortexes]
-        return valid_ways
-
+    print("depth", depth)
+    print("my_pos", state.my_pos)
     heatmap, vortexes = create_heatmap(state)
     if state.my_pos in heatmap:
+        print("return", 1)
         return 1
 
     if depth == 0:
+        print("return", 1 if state.my_pos in heatmap else 0)
         return 1 if state.my_pos in heatmap else 0
 
     distance = calculate_distance(state, state.my_pos)
-    for way in get_valid_ways():
+    for way in get_valid_ways(state, state.my_pos):
+        print("     way", way)
         state2 = deepcopy(state)
         players = state2.players[-1].copy()
         players[state2.avatar] = way
@@ -173,17 +212,18 @@ def calculate_action_penalty(state, depth=5):
         vortexes = [str(v.pos) for v in vortexes]
         crates = [str(c) for c in state2.crates[-1] if c not in heatmap]
         state2.update_all(crates, [], vortexes, players)
-        status = calculate_action_penalty(state2, depth=depth-1)
+        status = is_dying(state2, depth=depth-1)
         if status == 0:
+            print("return", 0)
             return 0
     return 1
 
 
 def eval_bomb(state, pos):
     if pos in state.vortexes[-1]:
-        return ("bomb", 0)
+        return 0
     else:
-        return ("bomb", crates_around_pos(pos, state.crates[-1])*state.crate)
+        return crates_around_pos(pos, state.crates[-1])*state.crate
 
 def crates_around_pos(pos, crates):
     next_to_me = [(pos[0]-1, pos[1]), (pos[0]+1, pos[1]),
@@ -191,7 +231,7 @@ def crates_around_pos(pos, crates):
     return len([c for c in crates if c in next_to_me])
 
 def position_score(state, distance, pos):
-    scores = (eval_bomb(state, pos)[1]*0.8 +
+    scores = (eval_bomb(state, pos)*0.8 +
             (1 if pos in state.powerups[-1] else 0))/len(distance[pos])
     return scores
 
@@ -304,9 +344,9 @@ do both
         self.state.update_all(crates, powerups, vortexes, players)
 #        self.state.dump()
 
-        action, score = next_action(self.state)
-        print("best action: ", action, score)
-        if action == "bomb":
+        action = next_action(self.state)
+        print("best action: ", action)
+        if action.action == "bomb":
             self.api.magical_explosion()
         else:
             pos = action
