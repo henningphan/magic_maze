@@ -22,6 +22,18 @@ def test_best_action_bomb():
     action = mm.next_action(state)
     assert action.name == "bomb"
 
+
+def test_penalty_table():
+    state = State()
+    state.avatar = "elf"
+    players = {"elf": "(0,0)"}
+    state.init_players(players)
+    state.init_map(1,1, [])
+    state.update_all([], [], [], players)
+    action = mm.next_action(state)
+
+    assert action.score >= 0
+
 def test_flee_no():
     """
 

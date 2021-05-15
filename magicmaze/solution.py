@@ -147,8 +147,8 @@ def next_action(state):
                     for pos, dis in distance.items()
                         if dis is not None]
     actions = pos_score + [bomb_score]
-    actions.sort(key=lambda tup: tup[1], reverse=True)
-    return actions[-1]
+    actions.sort(key=lambda action: action.score, reverse=True)
+    return actions[0]
 
 def create_action_penalty_lookup(state):
     """
@@ -170,7 +170,6 @@ def create_action_penalty_lookup(state):
         players = state2.players[-1].copy()
         heatmap, vortexes = create_heatmap(state2)
         vortexes = [str(v.pos) for v in vortexes]
-        vortexes.append(str(state2.my_pos)) # add my own bomb
         crates = [str(c) for c in state2.crates[-1] if c not in heatmap]
         state2.update_all(crates, [], vortexes, players)
         action_death[pos] = is_dying(state2, depth=5)
@@ -190,20 +189,15 @@ def is_dying(state, depth=5):
     """
     Returns 1 if I die by my actions else returns 0
     """
-    print("depth", depth)
-    print("my_pos", state.my_pos)
     heatmap, vortexes = create_heatmap(state)
     if state.my_pos in heatmap:
-        print("return", 1)
         return 1
 
     if depth == 0:
-        print("return", 1 if state.my_pos in heatmap else 0)
         return 1 if state.my_pos in heatmap else 0
 
     distance = calculate_distance(state, state.my_pos)
     for way in get_valid_ways(state, state.my_pos):
-        print("     way", way)
         state2 = deepcopy(state)
         players = state2.players[-1].copy()
         players[state2.avatar] = way
@@ -214,7 +208,6 @@ def is_dying(state, depth=5):
         state2.update_all(crates, [], vortexes, players)
         status = is_dying(state2, depth=depth-1)
         if status == 0:
-            print("return", 0)
             return 0
     return 1
 
@@ -346,7 +339,7 @@ do both
 
         action = next_action(self.state)
         print("best action: ", action)
-        if action.action == "bomb":
+        if action.name == "bomb":
             self.api.magical_explosion()
         else:
             pos = action
