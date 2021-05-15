@@ -148,7 +148,7 @@ def next_action(state):
                         if dis is not None]
     actions = pos_score + [bomb_score]
     actions.sort(key=lambda action: action.score, reverse=True)
-    return actions[0]
+    return actions
 
 def create_action_penalty_lookup(state):
     """
@@ -340,11 +340,13 @@ do both
         self.state.update_all(crates, powerups, vortexes, players)
 #        self.state.dump()
 
-        action = next_action(self.state)
-        print("best action: ", action)
-        if action.name == "bomb":
+        actions = next_action(self.state)
+        best_action = actions[0]
+        print("best action: ", best_action)
+        if best_action.score < 0:
+            print(actions)
+        if best_action.name == "bomb":
             self.api.magical_explosion()
         else:
-            pos = action
-            self.api.move(*action.name)
+            self.api.move(*best_action.name)
 
