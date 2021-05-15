@@ -171,7 +171,6 @@ def create_action_penalty_lookup(state):
     state2.update_all(crates, [], vortexes, players)
     action_death["bomb"] = is_dying(state2, depth=3)
     for pos in get_valid_ways(state, state.my_pos):
-        if pos == (1,0):
         state2 = deepcopy(state)
         players = state2.players[-1].copy()
         players[state2.avatar] = pos
@@ -341,14 +340,14 @@ do both
         """
         if self.tick == 0:
             self.state.init_players(players)
-        print("avatar:", self.state.avatar)
-        print("my_pos:", self.state.my_pos)
         self.tick += 1
         self.state.update_all(crates, powerups, vortexes, players)
 #        self.state.dump()
 
         actions = next_action(self.state)
         best_action = actions[0]
+        print("avatar:", self.state.avatar)
+        print("my_pos:", self.state.my_pos)
         print("best action: ", best_action)
         if best_action.score < 0:
             print(actions)
