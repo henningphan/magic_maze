@@ -162,7 +162,7 @@ def create_action_penalty_lookup(state):
     vortexes.append(str(state2.my_pos)) # add my own bomb
     crates = [str(c) for c in state2.crates[-1] if c not in heatmap]
     state2.update_all(crates, [], vortexes, players)
-    action_death["bomb"] = is_dying(state2, depth=5)
+    action_death["bomb"] = is_dying(state2, depth=4)
     for pos in get_valid_ways(state, state.my_pos):
         if pos in state.crates[-1]:
             continue
@@ -172,7 +172,7 @@ def create_action_penalty_lookup(state):
         vortexes = [str(v.pos) for v in vortexes]
         crates = [str(c) for c in state2.crates[-1] if c not in heatmap]
         state2.update_all(crates, [], vortexes, players)
-        action_death[pos] = is_dying(state2, depth=5)
+        action_death[pos] = is_dying(state2, depth=4)
     return action_death
 
 def get_valid_ways(state, pos):
@@ -185,7 +185,7 @@ def get_valid_ways(state, pos):
     blocked = [c for c in state.crates[-1] if c not in heatmap]
     return [m for m in all_moves if m in state.maze and m not in blocked]
 
-def is_dying(state, depth=5):
+def is_dying(state, depth=4):
     """
     Returns 1 if I die by my actions else returns 0
     """
@@ -243,7 +243,10 @@ def create_heatmap(state):
     queue = [v for v in vortexes if v.time == 0]
     while queue:
         vortex = queue.pop(0)
-        del untouched[vortex.pos]
+        try:
+            del untouched[vortex.pos]
+        except:
+            pass
 
         for pos in bomb_map(state, vortex):
             heatmap.add(pos)
@@ -343,5 +346,5 @@ do both
             self.api.magical_explosion()
         else:
             pos = action
-            self.api.move(*pos)
+            self.api.move(*action.name)
 
