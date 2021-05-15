@@ -149,15 +149,29 @@ def calculate_action_penalty(state, depth=5):
     """
     Returns 1 if I die by my actions else returns 0
     """
+    def get_valid_ways():
+        potential_ways = [pos for pos, path in distance.items()
+                          if path is not None and len(path) <=2]
+        valid_ways = [w for w in potential_ways
+                      if w in state.maze and w not in state.vortexes]
+        return valid_ways
+
     if depth == 0:
         heatmap, vortexes = create_heatmap(state)
         return 1 if state.my_pos in heatmap else 0
     distance = calculate_distance(state, state.my_pos)
-    new_ways=[pos for pos, path in distance.items() if path is not None and len(path) <=2]
-
-
-
-    return 0
+    for way in get_valid_ways():
+        state2 = deepcopy(state)
+        players = state2.players[-1].copy()
+        players[state2.avatar] = way
+        players = {p: str(pos) for p, pos in players.items()}
+        heatmap, vortexes = create_heatmap(state2)
+        crates = [str(c) for c in state2.crates[-1] if c not in heatmap]
+        state2.update_all(crates, [], vortexes, players)
+        status = calculate_action_penalty(state2, depth=depth-1)
+        if status == 0:
+            return 0
+    return 1
 
 
 def eval_bomb(state, pos):
