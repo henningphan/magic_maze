@@ -1,6 +1,7 @@
 from itertools import product, groupby
 from collections import namedtuple, defaultdict
 from pprint import pprint
+from copy import deepcopy
 
 class State:
     Vort = namedtuple("Vort", ["pos", "power", "time"])
@@ -121,15 +122,37 @@ def neighbours(state, pos):
     return valid_neighbours
 
 def next_action(state):
+    """
+    returns tuple(action, score)
+    """
     bomb_score = eval_bomb(state, state.my_pos)
     distance = calculate_distance(state, state.my_pos)
-    pos_score = [(pos, position_score(state, distance, pos)) for pos, dis in distance.items() if dis is not None]
+    pos_score = [(pos, position_score(state, distance, pos))
+                    for pos, dis in distance.items()
+                        if dis is not None]
     scores = pos_score + [bomb_score]
     scores.sort(key=lambda tup: tup[1], reverse=True)
+    calculate_action_penalty(state)
     if scores[0][0] == "bomb":
         return scores[0]
     else:
-        return (Solution.move_to(distance, scores[0][0]), scores[0][1])
+        return (move_to(distance, scores[0][0]), scores[0][1])
+
+
+def calculate_action_penalty(state, depth=5):
+    """
+    Returns 1 if I die by my actions else returns 0
+    """
+    if depth == 0:
+        heatmap, vortexes = create_heatmap(state)
+        return 1 if state.my_pos in heatmap else 0
+    distance = calculate_distance(state, state.my_pos)
+    import pdb
+    pdb.set_trace()
+
+
+    return 0
+
 
 def eval_bomb(state, pos):
     if pos in state.vortexes[-1]:
@@ -192,7 +215,18 @@ def bomb_map(state, vort):
     return bombed_pos
 
 
-
+def move_to(distance, pos):
+    """
+    :type distance: maze with walking distance
+    :type pos): tuple(int, int)
+    """
+    if len(distance[pos]) == 1:
+        return (0,0)
+    x1, y1 = distance[pos][-1]
+    x2, y2 = distance[pos][-2]
+    x_change = x2-x1
+    y_change = y2-y1
+    return (x_change, y_change)
         
 
 class Solution:
@@ -257,16 +291,3 @@ do both
             pos = action
             self.api.move(*pos)
 
-    @staticmethod
-    def move_to(distance, pos):
-        """
-        :type distance: maze with walking distance
-        :type pos): tuple(int, int)
-        """
-        if len(distance[pos]) == 1:
-            return (0,0)
-        x1, y1 = distance[pos][-1]
-        x2, y2 = distance[pos][-2]
-        x_change = x2-x1
-        y_change = y2-y1
-        return (x_change, y_change)

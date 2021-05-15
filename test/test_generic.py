@@ -49,16 +49,16 @@ def test_move_to():
     state.avatar = "elf"
     state.init_players({"elf": "(0,0"})
     distance = mm.calculate_distance(state, (0, 0))
-    x, y = Solution.move_to(distance, (0,0))
+    x, y = mm.move_to(distance, (0,0))
     assert x == 0
     assert y == 0
-    x, y = Solution.move_to(distance, (0,1))
+    x, y = mm.move_to(distance, (0,1))
     assert x == 0
     assert y == 1
-    x, y = Solution.move_to(distance, (1,0))
+    x, y = mm.move_to(distance, (1,0))
     assert x == 1
     assert y == 0
-    x, y = Solution.move_to(distance, (1,1))
+    x, y = mm.move_to(distance, (1,1))
     assert x+y == 1
 
 def test_state_calculate_distance():
@@ -128,5 +128,20 @@ def test_heatmap():
     state.init_map(6,6, [])
     state.vortexes.append([State.Vort((0,0),1,0), State.Vort((0,1),1, 2)])
     heatmap, future_vortexes = mm.create_heatmap(state)
-    assert len(abc) == 11
+    assert len(heatmap) == 5
 
+def test_action_penalty_die():
+    state = State()
+    state.avatar = "elf"
+    state.init_players({"elf": "0,0"})
+    state.init_map(6,1, [])
+    state.vortexes.append([State.Vort((0,0),6,0)])
+    assert mm.calculate_action_penalty(state,depth=5) == 1
+
+def test_action_penalty_survive():
+    state = State()
+    state.avatar = "elf"
+    state.init_players({"elf": "0,0"})
+    state.init_map(6,1, [])
+    state.vortexes.append([])
+    assert mm.calculate_action_penalty(state,depth=5) == 0
