@@ -18,7 +18,54 @@ def test_best_action_bomb():
     state.update_powerups(["(0, 3)"])
     state.update_crates(["(1,1)","(1,3)", "(2,2)"])
     state.update_vortexes([])
-    distance = mm.calculate_distance(state, state.my_pos)
     action, score = mm.next_action(state)
     print(score)
     assert action == "bomb"
+
+def test_flee_no():
+    """
+
+    ....
+    oxo.
+    wowp
+    """
+    state = State()
+    state.avatar = "elf"
+    state.init_players({"elf": "(2,0)"})
+    state.init_map(6,1, [])
+    state.update_crates([])
+    state.vortexes = [[State.Vort((2,0), 1, 0)]]
+    penalty = mm.calculate_action_penalty(state, 5)
+    assert penalty == 1
+
+def test_flee_no_impossible():
+    """
+
+    ....
+    oxo.
+    wowp
+    """
+    state = State()
+    state.avatar = "elf"
+    state.init_players({"elf": "(2,0)"})
+    state.init_map(6,1, [])
+    state.update_crates([])
+    state.vortexes = [[State.Vort((2,0), 8, 3)]]
+    penalty = mm.calculate_action_penalty(state, 5)
+    assert penalty == 1
+
+def test_flee_yes():
+    """
+
+    ....
+    oxo.
+    wowp
+    """
+    state = State()
+    state.avatar = "elf"
+    state.init_players({"elf": "(2,0)"})
+    state.init_map(6,1, [])
+    state.update_crates([])
+    state.vortexes = [[State.Vort((2,0), 1, 2)]]
+    penalty = mm.calculate_action_penalty(state, 5)
+    assert penalty == 0

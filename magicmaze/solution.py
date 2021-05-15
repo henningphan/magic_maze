@@ -35,7 +35,7 @@ class State:
 
     def update_all(self, crates, powerups, vortexes, players):
         self.update_players(players)
-        self.update_powerups(powerups)
+        self.update_vortexes(vortexes)
         self.update_crates(crates)
         self.update_powerups(powerups)
 
@@ -156,9 +156,13 @@ def calculate_action_penalty(state, depth=5):
                       if w in state.maze and w not in state.vortexes]
         return valid_ways
 
+    heatmap, vortexes = create_heatmap(state)
+    if state.my_pos in heatmap:
+        return 1
+
     if depth == 0:
-        heatmap, vortexes = create_heatmap(state)
         return 1 if state.my_pos in heatmap else 0
+
     distance = calculate_distance(state, state.my_pos)
     for way in get_valid_ways():
         state2 = deepcopy(state)
@@ -166,6 +170,7 @@ def calculate_action_penalty(state, depth=5):
         players[state2.avatar] = way
         players = {p: str(pos) for p, pos in players.items()}
         heatmap, vortexes = create_heatmap(state2)
+        vortexes = [str(v.pos) for v in vortexes]
         crates = [str(c) for c in state2.crates[-1] if c not in heatmap]
         state2.update_all(crates, [], vortexes, players)
         status = calculate_action_penalty(state2, depth=depth-1)
