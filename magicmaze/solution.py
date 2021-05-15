@@ -33,6 +33,12 @@ class State:
         self.heatmap = maze.copy()
         return maze
 
+    def update_all(self, crates, powerups, vortexes, players):
+        self.update_players(players)
+        self.update_powerups(powerups)
+        self.update_crates(crates)
+        self.update_powerups(powerups)
+
     def update_players(self, str_players):
         player_to_xy = {player: self.to_pos(str_xy)
                 for player, str_xy in str_players.items()}
@@ -147,8 +153,8 @@ def calculate_action_penalty(state, depth=5):
         heatmap, vortexes = create_heatmap(state)
         return 1 if state.my_pos in heatmap else 0
     distance = calculate_distance(state, state.my_pos)
-    import pdb
-    pdb.set_trace()
+    new_ways=[pos for pos, path in distance.items() if path is not None and len(path) <=2]
+
 
 
     return 0
@@ -276,12 +282,8 @@ do both
         print("avatar:", self.state.avatar)
         print("my_pos:", self.state.my_pos)
         self.tick += 1
-        self.state.update_players(players)
-        self.state.update_powerups(powerups)
-        self.state.update_crates(crates)
-        self.state.update_vortexes(vortexes)
-        self.state.dump()
-
+        self.state.update_all(crates, powerups, vortexes, players)
+#        self.state.dump()
 
         action, score = next_action(self.state)
         print("best action: ", action, score)
