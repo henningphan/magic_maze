@@ -171,6 +171,9 @@ def create_action_penalty_lookup(state):
     state2.update_all(crates, [], vortexes, players)
     action_death["bomb"] = is_dying(state2, depth=3)
     for pos in get_valid_ways(state, state.my_pos):
+        if len(state.vortexes[-1]) == 0:
+            action_death[pos] = 0
+            continue
         state2 = deepcopy(state)
         players = state2.players[-1].copy()
         players[state2.avatar] = pos
@@ -195,6 +198,8 @@ def is_dying(state, depth=3):
     """
     Returns 1 if I die by my actions else returns 0
     """
+    if len(state.vortexes[-1]) == 0:
+        return 0
     heatmap, vortexes = create_heatmap(state)
     if state.my_pos in heatmap:
         return 1
