@@ -225,7 +225,8 @@ def crates_around_pos(pos, crates):
 
 def position_score(state, distance, pos):
     scores = (eval_bomb(state, pos)*0.8 +
-            (1 if pos in state.powerups[-1] else 0))/len(distance[pos])
+            (1 if pos in state.powerups[-1] else 0) +
+            (-1 if state.my_pos in state.powerups[-1] else 0))/len(distance[pos])
     return scores
 
 def survive(state):
