@@ -55,12 +55,6 @@ def test_flee_no_impossible():
     assert penalty == 1
 
 def test_flee_yes():
-    """
-
-    ....
-    oxo.
-    wowp
-    """
     state = State()
     state.avatar = "elf"
     state.init_players({"elf": "(2,0)"})
@@ -69,3 +63,32 @@ def test_flee_yes():
     state.vortexes = [[State.Vort((2,0), 1, 2)]]
     penalty = mm.calculate_action_penalty(state, 5)
     assert penalty == 0
+
+def test_flee_yes_unblocked():
+    """avatar will die by a vortex, but
+    a vortex will go off before destroying a crate
+    thus allow avatar to escape
+    """
+    state = State()
+    state.avatar = "elf"
+    state.init_players({"elf": "(2,0)"})
+    state.init_map(3,1, [])
+    state.update_crates(["1,0"])
+    state.vortexes = [[State.Vort((0,0), 1,1), State.Vort((2,0), 1, 2)]]
+    penalty = mm.calculate_action_penalty(state, 5)
+    assert penalty == 0
+
+def test_flee_no_blocked():
+    """avatar will die by a vortex, but
+    a vortex will go off before destroying a crate
+    thus allow avatar to escape
+    """
+    state = State()
+    state.avatar = "elf"
+    state.init_players({"elf": "(2,0)"})
+    state.init_map(3,1, [])
+    state.update_crates(["1,0"])
+    state.vortexes = [[State.Vort((0,0), 1,1), State.Vort((2,0), 3, 2)]]
+    penalty = mm.calculate_action_penalty(state, 5)
+    assert penalty == 1
+
