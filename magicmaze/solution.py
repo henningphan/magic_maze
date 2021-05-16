@@ -96,7 +96,7 @@ class State:
                 if player != self.avatar]
 
     def dump(self):
-        print(self.__dict__)
+        pprint(self.__dict__)
 
 
 def calculate_distance(state, pos):
@@ -198,7 +198,6 @@ def is_dying(state, depth=3):
     """
     Returns 1 if I die by my actions else returns 0
     """
-    pprint(state.__dict__)
     if len(state.vortexes) == 0:
         return 0
     heatmap, vortexes = create_heatmap(state)
@@ -321,7 +320,6 @@ static maze
         :type walls: List[string]
         :type your_avatar: string
         """
-        print("whoami: ", your_avatar)
         self.state.avatar = your_avatar
         self.state.init_map(maze_width, maze_height, walls)
 
