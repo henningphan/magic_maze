@@ -1,4 +1,4 @@
-from itertools import product, groupby
+from itertools import product, groupby, chain
 from collections import namedtuple, defaultdict
 from pprint import pprint
 from copy import deepcopy
@@ -20,6 +20,8 @@ class State:
         self.heatmap = {}
         self.crates = []
         self.power = defaultdict(lambda: 1)
+        self.phantoms = []
+        self.phantom_cache = set()
 
     def init_map(self, maze_width, maze_height, walls):
         """
@@ -44,6 +46,8 @@ class State:
         player_to_xy = {player: self.to_pos(str_xy)
                 for player, str_xy in str_players.items()}
         self.players = player_to_xy
+        self.phantoms.append(set(self.enemies))
+        self.phantom_cache = set(chain(*self.phantoms[-4:]))
 
     def update_vortexes(self, str_vortexes):
         def get_power(xy):
@@ -238,7 +242,8 @@ def eval_bomb(state, pos):
         bm = bomb_map(state, Vort(pos, state.my_power, 0))
         crates_left = set(state.crates).difference(detonate_all_map(state))
         crates_destroyed = len([p for p in bm if p in crates_left])
-        return crates_destroyed*state.crate
+        phantoms_destroyed = len([p for p in bm if p in state.phantom_cache])
+        return crates_destroyed*state.crate + phantoms_destroyed*0.2
 
 def crates_around_pos(pos, crates):
     next_to_me = [(pos[0]-1, pos[1]), (pos[0]+1, pos[1]),
