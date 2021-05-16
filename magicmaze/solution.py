@@ -43,16 +43,16 @@ class State:
     def update_players(self, str_players):
         player_to_xy = {player: self.to_pos(str_xy)
                 for player, str_xy in str_players.items()}
-        self.players.append(player_to_xy)
+        self.players = player_to_xy
 
     def update_vortexes(self, str_vortexes):
         def get_power(xy):
-            player = [player for player, pos in self.players[-1].items() if xy == pos][0]
-            power = self.power[-1][player]
+            player = [player for player, pos in self.players.items() if xy == pos][0]
+            power = self.power[player]
             return power
         def get_previous():
             try:
-                return self.vortexes[-1]
+                return self.vortexes
             except Exception:
                 return []
         incoming_vort = [self.to_pos(str_pos) for str_pos in str_vortexes]
@@ -60,17 +60,17 @@ class State:
                         if v.time >= 0 and v.pos in incoming_vort]
         new = [Vort(pos, get_power(pos), 5) for pos in incoming_vort
                 if pos not in set(v.pos for v in previous)]
-        self.vortexes.append(previous+new)
+        self.vortexes = previous+new
 
     def update_powerups(self, str_powerups):
         powerups = [self.to_pos(p) for p in str_powerups]
-        for p, xy in self.players[-1].items():
+        for p, xy in self.players.items():
             if xy in powerups:
-                self.power[-1][p] += 1
-        self.powerups.append(powerups)
+                self.power[p] += 1
+        self.powerups = powerups
 
     def update_crates(self, str_crates):
-        self.crates.append([self.to_pos(c) for c in str_crates])
+        self.crates = [self.to_pos(c) for c in str_crates]
 
     def to_pos(self, str_pos):
         if isinstance(str_pos, tuple):
@@ -79,20 +79,20 @@ class State:
         return int(x), int(y)
 
     def init_players(self, players):
-        self.players = [{p: self.to_pos(xy) for p,xy in players.items()}]
-        self.power = [{p: 1 for p in players.keys()}]
+        self.players = {p: self.to_pos(xy) for p,xy in players.items()}
+        self.power = {p: 1 for p in players.keys()}
 
     @property
     def my_pos(self):
-        return self.players[-1][self.avatar]
+        return self.players[self.avatar]
 
     @property
     def my_power(self):
-        return self.power[-1][self.avatar]
+        return self.power[self.avatar]
 
     @property
     def enemies(self):
-        return [pos for player, pos in self.players[-1].items()
+        return [pos for player, pos in self.players.items()
                 if player != self.avatar]
 
     def dump(self):
@@ -105,7 +105,7 @@ def calculate_distance(state, pos):
     :type blocked_pos: Tuple(int, int), positions one cannot move to
     """
     try:
-        blocked_pos = state.crates[-1] + state.enemies
+        blocked_pos = state.crates + state.enemies
     except IndexError:
         blocked_pos = state.enemies
     distance = state.maze.copy()
@@ -163,23 +163,23 @@ def create_action_penalty_lookup(state):
     """
     action_death = {}
     state2 = deepcopy(state)
-    players = state2.players[-1].copy()
+    players = state2.players.copy()
     heatmap, vortexes = create_heatmap(state2)
     vortexes = [str(v.pos) for v in vortexes]
     vortexes.append(str(state2.my_pos)) # add my own bomb
-    crates = [str(c) for c in state2.crates[-1] if c not in heatmap]
+    crates = [str(c) for c in state2.crates if c not in heatmap]
     state2.update_all(crates, [], vortexes, players)
     action_death["bomb"] = is_dying(state2, depth=3)
     for pos in get_valid_ways(state, state.my_pos):
-        if len(state.vortexes[-1]) == 0:
+        if len(state.vortexes) == 0:
             action_death[pos] = 0
             continue
         state2 = deepcopy(state)
-        players = state2.players[-1].copy()
+        players = state2.players.copy()
         players[state2.avatar] = pos
         heatmap, vortexes = create_heatmap(state2)
         vortexes = [str(v.pos) for v in vortexes]
-        crates = [str(c) for c in state2.crates[-1] if c not in heatmap]
+        crates = [str(c) for c in state2.crates if c not in heatmap]
         state2.update_all(crates, [], vortexes, players)
         action_death[pos] = is_dying(state2, depth=3)
     return action_death
@@ -191,14 +191,15 @@ def get_valid_ways(state, pos):
     all_moves = [pos, (pos[0]-1, pos[1]), (pos[0]+1, pos[1]),
             (pos[0], pos[1]-1), (pos[0], pos[1]+1)]
     heatmap, _ = create_heatmap(state)
-    blocked = [c for c in state.crates[-1] if c not in heatmap]
+    blocked = [c for c in state.crates if c not in heatmap]
     return [m for m in all_moves if m in state.maze and m not in blocked]
 
 def is_dying(state, depth=3):
     """
     Returns 1 if I die by my actions else returns 0
     """
-    if len(state.vortexes[-1]) == 0:
+    pprint(state.__dict__)
+    if len(state.vortexes) == 0:
         return 0
     heatmap, vortexes = create_heatmap(state)
     if state.my_pos in heatmap:
@@ -210,12 +211,12 @@ def is_dying(state, depth=3):
     distance = calculate_distance(state, state.my_pos)
     for way in get_valid_ways(state, state.my_pos):
         state2 = deepcopy(state)
-        players = state2.players[-1].copy()
+        players = state2.players.copy()
         players[state2.avatar] = way
         players = {p: str(pos) for p, pos in players.items()}
         heatmap, vortexes = create_heatmap(state2)
         vortexes = [str(v.pos) for v in vortexes]
-        crates = [str(c) for c in state2.crates[-1] if c not in heatmap]
+        crates = [str(c) for c in state2.crates if c not in heatmap]
         state2.update_all(crates, [], vortexes, players)
         status = is_dying(state2, depth=depth-1)
         if status == 0:
@@ -224,10 +225,12 @@ def is_dying(state, depth=3):
 
 
 def eval_bomb(state, pos):
-    if pos in state.vortexes[-1]:
+    if pos in {v.pos for v in state.vortexes}:
+        return 0
+    if pos in state.vortexes:
         return 0
     else:
-        return crates_around_pos(pos, state.crates[-1])*state.crate
+        return crates_around_pos(pos, state.crates)*state.crate
 
 def crates_around_pos(pos, crates):
     next_to_me = [(pos[0]-1, pos[1]), (pos[0]+1, pos[1]),
@@ -236,7 +239,7 @@ def crates_around_pos(pos, crates):
 
 def position_score(state, distance, pos):
     scores = (eval_bomb(state, pos)*0.8 +
-            (1 if pos in state.powerups[-1] and state.my_pos != pos else 0))/len(distance[pos])
+            (1 if pos in state.powerups and state.my_pos != pos else 0))/len(distance[pos])
     return scores
 
 def survive(state):
@@ -247,7 +250,7 @@ def create_heatmap(state):
     returns a map of positions which are deadly
     and a list of vortexes which hasnt detonated yet
     """
-    vortexes = state.vortexes[-1]
+    vortexes = state.vortexes
     vortexes.sort(key=lambda x: x.time)
     heatmap = set()
     untouched = {v.pos: v for v in vortexes}
@@ -299,7 +302,6 @@ def move_to(distance, pos):
     x_change = x2-x1
     y_change = y2-y1
     return (x_change, y_change)
-        
 
 class Solution:
     def __init__(self, api):

@@ -1,7 +1,7 @@
 import pytest
 from pprint import pprint
 from fixtures import solution
-from magicmaze import Solution, State
+from magicmaze import *
 import magicmaze as mm
 from itertools import product
 
@@ -83,50 +83,36 @@ def test_update_vortexes_basic():
     """One player puts down one vortex"""
     state = State()
     state.avatar = "elf"
-    state.init_players({"elf": "0,0"})
+    state.init_players({"elf": "0,0", "knight": "1,0"})
     state.update_vortexes(["0,0"])
     assert len(state.vortexes) == 1
-    state.update_vortexes(["0,0"])
+    state.update_vortexes(["0,0", "1,0"])
     assert len(state.vortexes) == 2
+    assert state.vortexes[0].time != state.vortexes[1].time
 
-def test_update_vortexes_advanced():
-    """
-    One player puts down one vortex
-    and there is a preexisting vortex
-    """
-    state = State()
-    state.avatar = "elf"
-    state.init_players({"elf": "0,0"})
-    state.vortexes.append([State.Vort((0,1), 1, 1)])
-    state.update_vortexes(["0,0", "0,1"])
-    assert len(state.vortexes[-1]) == 2
-    state.update_vortexes(["0,0", "0,1"])
-    assert len(state.vortexes[-1]) == 2
-    state.update_vortexes(["0,0"])
-    assert len(state.vortexes[-1]) == 1
 
 def test_heatmap():
     state = State()
     state.avatar = "elf"
     state.init_players({"elf": "0,0"})
     state.init_map(6,6, [])
-    state.vortexes.append([State.Vort((0,1), 1, 1), State.Vort((0,0), 5, 5)])
+    state.vortexes.append([Vort((0,1), 1, 1), Vort((0,0), 5, 5)])
     heatmap = create_heatmap(state)
 
 
 def test_bomb_map():
     state = State()
     state.init_map(6,6, [])
-    abc = mm.bomb_map(state, State.Vort((1,1),4,1))
+    abc = mm.bomb_map(state, Vort((1,1),4,1))
     assert len(abc) == 11
-    abc = mm.bomb_map(state, State.Vort((0,0),4,1))
+    abc = mm.bomb_map(state, Vort((0,0),4,1))
     assert len(abc) == 9
 
 
 def test_heatmap():
     state = State()
     state.init_map(6,6, [])
-    state.vortexes.append([State.Vort((0,0),1,0), State.Vort((0,1),1, 2)])
+    state.vortexes = [Vort((0,0),1,0), Vort((0,1),1, 2)]
     heatmap, future_vortexes = mm.create_heatmap(state)
     assert len(heatmap) == 5
 
@@ -135,7 +121,7 @@ def test_action_penalty_die():
     state.avatar = "elf"
     state.init_players({"elf": "0,0"})
     state.init_map(6,1, [])
-    state.vortexes.append([State.Vort((0,0),6,0)])
+    state.vortexes = [Vort((0,0),6,0)]
     assert mm.is_dying(state,depth=5) == 1
 
 def test_action_penalty_survive():
@@ -144,5 +130,5 @@ def test_action_penalty_survive():
     state.init_players({"elf": "0,0"})
     state.init_map(6,1, [])
     state.update_all([],[],[],{"elf": "0,0"})
-    state.vortexes.append([])
+    state.vortexes = []
     assert mm.is_dying(state,depth=5) == 0
