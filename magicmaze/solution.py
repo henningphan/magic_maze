@@ -58,7 +58,7 @@ class State:
         incoming_vort = [self.to_pos(str_pos) for str_pos in str_vortexes]
         previous = [v._replace(time=v.time-1) for v in get_previous()
                         if v.time >= 0 and v.pos in incoming_vort]
-        new = [Vort(pos, get_power(pos), 5) for pos in incoming_vort
+        new = [Vort(pos, get_power(pos), 6) for pos in incoming_vort
                 if pos not in set(v.pos for v in previous)]
         self.vortexes = previous+new
 
@@ -93,9 +93,13 @@ class State:
                 if player != self.avatar]
 
     def dump(self):
-        print(self.__dict__)
+        copy_dict = self.__dict__.copy()
+        copy_dict["power"] = dict(self.power)
+        print(copy_dict)
     def dumpp(self):
-        pprint(self.__dict__)
+        copy_dict = self.__dict__.copy()
+        copy_dict["power"] = dict(self.power)
+        pprint(copy_dict)
 
 
 def calculate_distance(state, pos):
@@ -342,11 +346,9 @@ do both
         :type vortexes: List[string]
         :type players: Dict[string, string]
         """
-        if self.tick == 0:
-            self.state.init_players(players)
         self.tick += 1
         self.state.update_all(crates, powerups, vortexes, players)
-#        self.state.dump()
+        self.state.dump()
 
         actions = next_action(self.state)
         best_action = actions[0]

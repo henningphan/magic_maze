@@ -20,7 +20,7 @@ def test_calculate_distance_no_blocks():
     max_y = 6
     state = State()
     state.avatar = "elf"
-    state.init_players({"elf": "(0,0)"})
+    state.update_players({"elf": "(0,0)"})
     state.init_map(max_x, max_y, [])
     for xy in product(range(max_x), range(max_y)):
         for xy2 in product(range(max_x), range(max_y)):
@@ -34,7 +34,7 @@ def test_calculate_distance_w_blocks():
     max_y = 1
     state = State()
     state.avatar = "elf"
-    state.init_players({"elf": "(0,0)"})
+    state.update_players({"elf": "(0,0)"})
     state.init_map(max_x, max_y, ["(1,0)"])
     distance = mm.calculate_distance(state, (0, 0))
     print(distance[(2,0)])
@@ -47,7 +47,7 @@ def test_move_to():
     state = State()
     state.init_map(max_x, max_y, [])
     state.avatar = "elf"
-    state.init_players({"elf": "(0,0"})
+    state.update_players({"elf": "(0,0"})
     distance = mm.calculate_distance(state, (0, 0))
     x, y = mm.move_to(distance, (0,0))
     assert x == 0
@@ -65,14 +65,14 @@ def test_state_calculate_distance():
     state = State()
     state.init_map(6,6,[])
     state.avatar="elf"
-    state.init_players({"elf": "(0,0)"})
+    state.update_players({"elf": "(0,0)"})
     distance = mm.calculate_distance(state, (0,0))
     assert len(distance) == 36
     
 def test_update_powerups():
     state = State()
     state.avatar="elf"
-    state.init_players({"elf": "(0,0)"})
+    state.update_players({"elf": "(0,0)"})
     assert state.my_power == 1
     state.update_powerups(["(0,0)"])
     assert state.my_power == 2
@@ -83,7 +83,7 @@ def test_update_vortexes_basic():
     """One player puts down one vortex"""
     state = State()
     state.avatar = "elf"
-    state.init_players({"elf": "0,0", "knight": "1,0"})
+    state.update_players({"elf": "0,0", "knight": "1,0"})
     state.update_vortexes(["0,0"])
     assert len(state.vortexes) == 1
     state.update_vortexes(["0,0", "1,0"])
@@ -94,7 +94,7 @@ def test_update_vortexes_basic():
 def test_heatmap():
     state = State()
     state.avatar = "elf"
-    state.init_players({"elf": "0,0"})
+    state.update_players({"elf": "0,0"})
     state.init_map(6,6, [])
     state.vortexes.append([Vort((0,1), 1, 1), Vort((0,0), 5, 5)])
     heatmap = create_heatmap(state)
@@ -119,7 +119,7 @@ def test_heatmap():
 def test_action_penalty_die():
     state = State()
     state.avatar = "elf"
-    state.init_players({"elf": "0,0"})
+    state.update_players({"elf": "0,0"})
     state.init_map(6,1, [])
     state.vortexes = [Vort((0,0),6,0)]
     assert mm.is_dying(state,depth=5) == 1
@@ -127,7 +127,6 @@ def test_action_penalty_die():
 def test_action_penalty_survive():
     state = State()
     state.avatar = "elf"
-    state.init_players({"elf": "0,0"})
     state.init_map(6,1, [])
     state.update_all([],[],[],{"elf": "0,0"})
     state.vortexes = []
