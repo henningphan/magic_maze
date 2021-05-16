@@ -78,7 +78,6 @@ class State:
         x, y = str_pos.replace("(","").replace(")","").split(",")
         return int(x), int(y)
 
-
     @property
     def my_pos(self):
         return self.players[self.avatar]
@@ -96,10 +95,16 @@ class State:
         copy_dict = self.__dict__.copy()
         copy_dict["power"] = dict(self.power)
         print(copy_dict)
+
     def dumpp(self):
         copy_dict = self.__dict__.copy()
         copy_dict["power"] = dict(self.power)
         pprint(copy_dict)
+
+def calculate_future(state, depth=4):
+    maze = state.maze
+    vortexes = state.vortexes
+    crates = state.crates
 
 
 def calculate_distance(state, pos):
@@ -229,10 +234,11 @@ def is_dying(state, depth=3):
 def eval_bomb(state, pos):
     if pos in {v.pos for v in state.vortexes}:
         return 0
-    if pos in state.vortexes:
-        return 0
     else:
-        return crates_around_pos(pos, state.crates)*state.crate
+        bm = bomb_map(state, Vort(pos, state.my_power, 0))
+        crates_left = set(state.crates).difference(detonate_all_map(state))
+        crates_destroyed = len([p for p in bm if p in crates_left])
+        return crates_destroyed*state.crate
 
 def crates_around_pos(pos, crates):
     next_to_me = [(pos[0]-1, pos[1]), (pos[0]+1, pos[1]),
@@ -271,6 +277,9 @@ def create_heatmap(state):
     return heatmap, untouched.values()
 
 def bomb_map(state, vort):
+    """
+    Returns list of positions that will explode
+    """
     pos = vort.pos
     bombed_pos = [pos]
     for xy in ((x, pos[1]) for x in range(pos[0]+1, pos[0]+vort.power+1)):
@@ -290,6 +299,13 @@ def bomb_map(state, vort):
             break
         bombed_pos.append(xy)
     return bombed_pos
+
+
+def detonate_all_map(state):
+    bm = set()
+    for v in state.vortexes:
+        bm.update(bomb_map(state, v))
+    return bm
 
 
 def move_to(distance, pos):
