@@ -19,7 +19,7 @@ class State:
         self.vortexes = []
         self.heatmap = {}
         self.crates = []
-        self.power = {}
+        self.power = defaultdict(lambda: 1)
 
     def init_map(self, maze_width, maze_height, walls):
         """
@@ -78,9 +78,6 @@ class State:
         x, y = str_pos.replace("(","").replace(")","").split(",")
         return int(x), int(y)
 
-    def init_players(self, players):
-        self.players = {p: self.to_pos(xy) for p,xy in players.items()}
-        self.power = {p: 1 for p in players.keys()}
 
     @property
     def my_pos(self):
@@ -96,6 +93,8 @@ class State:
                 if player != self.avatar]
 
     def dump(self):
+        print(self.__dict__)
+    def dumpp(self):
         pprint(self.__dict__)
 
 
