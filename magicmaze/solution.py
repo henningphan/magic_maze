@@ -281,6 +281,38 @@ def create_heatmap(state):
                 queue.append(untouched[pos])
     return heatmap, untouched.values()
 
+def calc_bomb_crates(state, depth=4):
+    """
+    Returns list[tuple(heatmap, crates)]
+    heatmap: set of positions where an explosion ocurred
+    crates: set of all available crates
+    """
+    all_vort = set(state.vortexes)
+    detonated = set()
+    history = []
+    all_crates = set(state.crates)
+    exploded_crates = set()
+    for d in range(depth):
+        heatmap = set()
+        queue = [v for v in all_vort
+                 if v.time == d and v not in detonated]
+        detonated.update(queue)
+        while queue:
+            v = queue.pop()
+            bm = bomb_map(state, v)
+            heatmap.update(bm)
+            diff_vortexes = [v for v in all_vort.difference(detonated)
+                    if v.pos in bm]
+            detonated.update(diff_vortexes)
+        diff_crates = {c for c in all_crates.difference(exploded_crates)
+                       if c in heatmap}
+
+        exploded_crates.update(diff_crates)
+        history.append((heatmap, all_crates.difference(exploded_crates)))
+    return history
+
+
+
 def bomb_map(state, vort):
     """
     Returns list of positions that will explode

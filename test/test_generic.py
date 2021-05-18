@@ -131,3 +131,23 @@ def test_action_penalty_survive():
     state.update_all([],[],[],{"elf": "0,0"})
     state.vortexes = []
     assert mm.is_dying(state,depth=5) == 0
+
+def test_calc_bomb_crates():
+    """
+    xxx
+    bwc
+    xxb
+    """
+    state = State()
+    state.avatar = "elf"
+    state.init_map(6,6, [(1,1)])
+    state.update_players({"elf": (2,0)})
+    state.vortexes = [Vort((1,2),2,1), Vort((2,0), 2,2)]
+    state.update_all([(1,0)],[], [v.pos for v in state.vortexes], {"elf": (2,0)})
+    hm_crates = calc_bomb_crates(state, 7)
+    bombs = {t[0] for sett in hm_crates for t in sett[0]}
+    crates = hm_crates[-1][1]
+    assert len(bombs) > 2
+    assert len(crates) == 0
+
+
