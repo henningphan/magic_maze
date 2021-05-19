@@ -17,7 +17,6 @@ class State:
         self.powerups = []
         self.players = []
         self.vortexes = []
-        self.heatmap = {}
         self.crates = []
         self.power = defaultdict(lambda: 1)
         self.phantoms = []
@@ -33,7 +32,6 @@ class State:
         for xy in (self.to_pos(xy) for xy in walls):
             del maze[xy]
         self.maze = maze
-        self.heatmap = maze.copy()
         return maze
 
     def update_all(self, crates, powerups, vortexes, players):
@@ -153,16 +151,17 @@ def next_action(state):
             return penalty_table[distance[pos][-1]]
 
 
+    bomb_crates = calc_bomb_crates(state, depth=7)
     penalty_table = create_action_penalty_lookup(state)
     bomb_score = Action("bomb",
             state.my_pos,
             state.my_pos,
-            eval_bomb(state, state.my_pos)-penalty_table["bomb"]*20)
+            eval_bomb(state, state.my_pos, bomb_crates)-penalty_table["bomb"]*20)
     distance = calculate_distance(state, state.my_pos)
     pos_score = [Action(move_to(distance, pos),
         state.my_pos,
         pos,
-        position_score(state, distance, pos)- get_penalty(penalty_table, distance,pos)*20)
+        position_score(state, distance, pos, bomb_crates)- get_penalty(penalty_table, distance,pos)*20)
                     for pos, dis in distance.items()
                         if dis is not None]
     actions = pos_score + [bomb_score]
@@ -235,13 +234,12 @@ def is_dying(state, depth=3):
     return 1
 
 
-def eval_bomb(state, pos):
+def eval_bomb(state, pos, bomb_crates):
     if pos in {v.pos for v in state.vortexes}:
         return 0
     else:
         bm = bomb_map(state, Vort(pos, state.my_power, 0))
-        crates_left = set(state.crates).difference(detonate_all_map(state))
-        crates_destroyed = len([p for p in bm if p in crates_left])
+        crates_destroyed = len([p for p in bm if p in bomb_crates[6][1]])
         phantoms_destroyed = len([p for p in bm if p in state.phantom_cache])
         return crates_destroyed*state.crate + phantoms_destroyed*0.2
 
@@ -250,8 +248,8 @@ def crates_around_pos(pos, crates):
             (pos[0], pos[1]-1), (pos[0], pos[1]+1)]
     return len([c for c in crates if c in next_to_me])
 
-def position_score(state, distance, pos):
-    scores = (eval_bomb(state, pos)*0.8 +
+def position_score(state, distance, pos, bomb_crates):
+    scores = (eval_bomb(state, pos, bomb_crates)*0.8 +
             (1 if pos in state.powerups and state.my_pos != pos else 0))/len(distance[pos])
     return scores
 
@@ -281,7 +279,7 @@ def create_heatmap(state):
                 queue.append(untouched[pos])
     return heatmap, untouched.values()
 
-def calc_bomb_crates(state, depth=4):
+def calc_bomb_crates(state, depth=7):
     """
     Returns list[tuple(heatmap, crates)]
     heatmap: set of positions where an explosion ocurred

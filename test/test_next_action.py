@@ -24,14 +24,22 @@ def test_best_action_bomb():
 
 
 def test_cant_escape_bomb():
+    """
+   (p,b)
+    x
+    x
+    x
+    x
+    """
     state = State()
     state.avatar = "elf"
     players = {"elf": "0,0"}
     state.update_players(players)
     state.init_map(5,1, [])
-    state.vortexes = [Vort((0,0),0,1)]
+    state.vortexes = [Vort((0,0),1,1)]
     actions = mm.next_action(state)
-    assert actions[0].name == (1,0)
+    import pdb
+    pdb.set_trace()
     assert actions[0].score < 0
 
 def test_penalty_table():
