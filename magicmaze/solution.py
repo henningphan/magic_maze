@@ -180,8 +180,9 @@ def create_action_penalty_lookup(state):
     vortexes.append(str(state2.my_pos)) # add my own bomb
     crates = [str(c) for c in state2.crates if c not in heatmap]
     state2.update_all(crates, [], vortexes, players)
-    action_death["bomb"] = is_dying(state2, depth=3)
-    for pos in get_valid_ways(state, state.my_pos):
+    bomb_crates = calc_bomb_crates(state2, depth=7)
+    action_death["bomb"] = is_dying(state2, bomb_crates, depth=3)
+    for pos in get_valid_ways(state, state.my_pos, [bomb_crates[0]]):
         if len(state.vortexes) == 0:
             action_death[pos] = 0
             continue
@@ -192,45 +193,48 @@ def create_action_penalty_lookup(state):
         vortexes = [str(v.pos) for v in vortexes]
         crates = [str(c) for c in state2.crates if c not in heatmap]
         state2.update_all(crates, [], vortexes, players)
-        action_death[pos] = is_dying(state2, depth=3)
+        bomb_crates = calc_bomb_crates(state2, depth=7)
+        action_death[pos] = is_dying(state2, bomb_crates, depth=3)
     return action_death
 
-def get_valid_ways(state, pos):
+def get_valid_ways(state, pos, bomb_crates):
     """
     Returns list of positions an avatar can move to
     """
+
     all_moves = [pos, (pos[0]-1, pos[1]), (pos[0]+1, pos[1]),
             (pos[0], pos[1]-1), (pos[0], pos[1]+1)]
-    heatmap, _ = create_heatmap(state)
-    blocked = [c for c in state.crates if c not in heatmap]
-    return [m for m in all_moves if m in state.maze and m not in blocked]
+    return [m for m in all_moves if m in state.maze and m not in bomb_crates[0][1]]
 
-def is_dying(state, depth=3):
+def is_dying(state, bomb_crates, depth=3):
     """
     Returns 1 if I die by my actions else returns 0
     """
-    if len(state.vortexes) == 0:
-        return 0
-    heatmap, vortexes = create_heatmap(state)
-    if state.my_pos in heatmap:
-        return 1
+    def get_depth_limit():
+        """
+        If at depth X there exists no bombs we cannot die
+        and we can early exit
+        """
+        max_depth=6
+        for d in range(max_depth,-1, -1):
+            if not bomb_crates[d][0]:
+                return min(depth, d)
 
-    if depth == 0:
-        return 1 if state.my_pos in heatmap else 0
+    depth_limit = get_depth_limit()
 
-    distance = calculate_distance(state, state.my_pos)
-    for way in get_valid_ways(state, state.my_pos):
-        state2 = deepcopy(state)
-        players = state2.players.copy()
-        players[state2.avatar] = way
-        players = {p: str(pos) for p, pos in players.items()}
-        heatmap, vortexes = create_heatmap(state2)
-        vortexes = [str(v.pos) for v in vortexes]
-        crates = [str(c) for c in state2.crates if c not in heatmap]
-        state2.update_all(crates, [], vortexes, players)
-        status = is_dying(state2, depth=depth-1)
-        if status == 0:
+    queue = [(state.my_pos, 0)]
+    while queue:
+        my_pos, d = queue.pop()
+        if my_pos in bomb_crates[d][0]:
+            continue
+
+        if d+1 >= depth_limit:
             return 0
+        new_ways = [(pos, d+1) for pos in get_valid_ways(state, my_pos, [bomb_crates[d]])
+                if pos not in bomb_crates[d][1]]
+        print(new_ways)
+        queue.extend(new_ways)
+
     return 1
 
 
@@ -302,6 +306,7 @@ def calc_bomb_crates(state, depth=7):
             diff_vortexes = [v for v in all_vort.difference(detonated)
                     if v.pos in bm]
             detonated.update(diff_vortexes)
+            queue.extend(diff_vortexes)
         diff_crates = {c for c in all_crates.difference(exploded_crates)
                        if c in heatmap}
 
