@@ -239,12 +239,16 @@ def is_dying(state, bomb_crates, depth=3):
 
 
 def eval_bomb(state, pos, bomb_crates):
+    """Evaluate value of putting a bomb in position"""
     if pos in {v.pos for v in state.vortexes}:
         return 0
     else:
         bm = bomb_map(state, Vort(pos, state.my_power, 0))
+        bma = detonate_all_map(state)
+        leftover_phantoms = {p for p in state.phantom_cache if p not in bma}
         crates_destroyed = len([p for p in bm if p in bomb_crates[6][1]])
-        phantoms_destroyed = len([p for p in bm if p in state.phantom_cache])
+        # todo calculate phantoms can only be destroyed once
+        phantoms_destroyed = len([p for p in bm if p in leftover_phantoms])
         return crates_destroyed*state.crate + phantoms_destroyed*0.2
 
 def crates_around_pos(pos, crates):
@@ -318,6 +322,7 @@ def calc_bomb_crates(state, depth=7):
 
 def bomb_map(state, vort):
     """
+    calculates the blast effect made by vort. Doesnt calculate cascade effect
     Returns list of positions that will explode
     """
     pos = vort.pos
